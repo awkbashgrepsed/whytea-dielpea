@@ -1,0 +1,12 @@
+{
+    "download_dir": "videos",
+    "quality": "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
+    "latest_per_source": 5,
+    "sleep_between_sources": 2,
+    "retries": 10,
+    "fragment_retries": 10,
+    "continue_downloads": true,
+    "no_shorts": true,
+    "cookies_from_browser": "",
+    "extra_args": []
+}

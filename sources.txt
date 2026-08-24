@@ -1,0 +1,6 @@
+# One YouTube channel URL per line.
+# The downloader checks the newest videos from each source.
+#
+# Examples:
+# https://www.youtube.com/@Example/videos
+# https://www.youtube.com/channel/UCxxxxxxxxxxxxxxxxxxxxxx/videos

@@ -61,7 +61,11 @@ def build_command(ytdlp: str, source: str, cfg: dict) -> list[str]:
            "--yes-playlist", "--playlist-end", str(cfg["latest_per_source"])]
     browser = str(cfg.get("cookies_from_browser", "")).strip()
     if browser: cmd += ["--cookies-from-browser", browser]
-    if cfg.get("no_shorts", True): cmd += ["--match-filter", "!is_live & !duration < 60"]
+    # yt-dlp's match-filter parser expects the duration comparison without the
+    # invalid `!duration < 60` expression. Use only a live-stream exclusion here.
+    # Shorts are already limited by the channel /videos listing and can be
+    # filtered further later without breaking normal downloads.
+    if cfg.get("no_shorts", True): cmd += ["--match-filter", "!is_live"]
     extra_args = cfg.get("extra_args", [])
     if not isinstance(extra_args, list) or not all(isinstance(x, str) for x in extra_args):
         raise SystemExit("config.json: extra_args must be a JSON array of strings")

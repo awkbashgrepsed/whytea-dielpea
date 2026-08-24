@@ -15,14 +15,14 @@ SOURCES_PATH = ROOT / "sources.txt"
 ARCHIVE_PATH = ROOT / "archive.txt"
 DEFAULT_CONFIG = {
     "download_dir": "videos",
-    "quality": "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
+    "quality": "bestvideo[height<=480]+bestaudio/best[height<=480]/best",
     "latest_per_source": 5,
     "sleep_between_sources": 2,
     "retries": 10,
     "fragment_retries": 10,
     "continue_downloads": True,
     "no_shorts": True,
-    "cookies_from_browser": "",
+    "cookies_from_browser": "firefox",
     "extra_args": [],
 }
 

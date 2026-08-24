@@ -1,39 +1,28 @@
 # whytea-dielpea
 
-An offline YouTube downloader built around the **system-installed `yt-dlp`** command.
+An offline YouTube downloader and simple local video library built around the **system-installed `yt-dlp`**.
 
-The idea is simple: put the YouTube channels you care about in `sources.txt`, run the program while the connection is available, and it keeps a local copy of their newest videos. You can then watch the downloaded files without YouTube, a VPN, or an internet connection.
+Put the YouTube channels you care about in `sources.txt`, download while the connection is available, then open the local library in Firefox and watch without YouTube or an internet connection.
 
 ## How it works
 
 ```text
-sources.txt
-    |
-    v
-whytea.py
-    |
-    v
-system yt-dlp
-    |
-    +--> latest videos from Channel A
-    +--> latest videos from Channel B
-    +--> latest videos from Channel C
-    |
-    v
-videos/<channel>/
+sources.txt -> whytea.py -> system yt-dlp -> videos/<channel>/
+                                      |
+                                      v
+                                  web.py
+                                      |
+                                      v
+                         Firefox -> 127.0.0.1:8765
 ```
 
-Each source is checked independently. yt-dlp's download archive (`archive.txt`) records videos that have already been downloaded, so running the program again does **not** redownload the same videos.
-
-Downloads are resumable and yt-dlp is configured with retries and fragment retries so temporary connection failures are much less painful.
+`archive.txt` prevents already-downloaded videos from being downloaded again. `watch_state.json` records which local videos you have watched.
 
 ## Requirements
 
 - Python 3.9+
-- `yt-dlp` installed system-wide and available as `yt-dlp` in `PATH`
-- `ffmpeg` recommended/required for merging separate video and audio streams
-
-Verify:
+- system-installed `yt-dlp` available as `yt-dlp` in `PATH`
+- `ffmpeg` recommended/required for merging separate video/audio streams
 
 ```bash
 yt-dlp --version
@@ -49,77 +38,64 @@ https://www.youtube.com/@SomeChannel/videos
 https://www.youtube.com/@AnotherChannel/videos
 ```
 
-You can use channel URLs, including the `/videos` page. One source per line.
-
-Then run:
+Then download:
 
 ```bash
 python whytea.py
 ```
 
-The default is the newest **5 videos per source**. Change `latest_per_source` in `config.json` if you want more or fewer.
+The default is the newest **5 videos per source**. Change `latest_per_source` in `config.json` for more or fewer.
+
+## Local Firefox library
+
+Start the local web server:
+
+```bash
+python web.py
+```
+
+Open Firefox at:
+
+```text
+http://127.0.0.1:8765
+```
+
+The simple page shows the downloaded videos, channel, upload date, and watched status. Videos play directly from the local disk using Firefox's normal HTML5 video player.
+
+A video is automatically marked watched when playback reaches the end. You can also manually mark videos watched/unwatched. The state is saved in `watch_state.json`, so it survives restarting the server and does not depend on browser history.
+
+The server binds to `127.0.0.1`, so it is only accessible from this computer by default.
 
 ## Browser authentication
 
-For channels/videos that require your logged-in YouTube session, `yt-dlp` can import cookies directly from a supported browser. Set this in `config.json`, for example:
+For downloads requiring your logged-in YouTube session, configure yt-dlp browser cookies in `config.json`, for example:
 
 ```json
 "cookies_from_browser": "firefox"
 ```
 
-Other supported browser names can be used according to your yt-dlp installation.
+Do not put account cookies into this public repository.
 
-Do not put a `cookies.txt` containing your account session into this public repository.
-
-## Continuous mode
-
-To keep checking periodically:
+## Continuous downloading
 
 ```bash
 python whytea.py --watch
 ```
 
-The default interval is 30 minutes. For example, check every 10 minutes:
+Check every 10 minutes:
 
 ```bash
 python whytea.py --watch --interval 600
 ```
 
-## Check installation
-
-```bash
-python whytea.py --check
-```
-
-## Configuration
-
-`config.json` controls the downloader:
-
-- `download_dir`: local video library directory
-- `quality`: yt-dlp format selector; default is up to 1080p
-- `latest_per_source`: number of newest playlist entries examined per channel
-- `sleep_between_sources`: delay between channels
-- `retries`: network retries
-- `fragment_retries`: retries for individual media fragments
-- `no_shorts`: skip very short videos and live streams
-- `cookies_from_browser`: optional browser name for authenticated downloads
-- `extra_args`: additional yt-dlp arguments
+The downloader and browser library can run independently: the downloader updates `videos/`, while Firefox reads the same directory through `web.py`.
 
 ## Offline-first behavior
 
-The downloader is intentionally designed to survive unreliable connectivity:
-
 - downloads resume when possible
 - failed sources do not stop the whole run
-- yt-dlp's archive prevents duplicate downloads
-- individual media fragments are retried
-- the program can be run repeatedly without needing to track downloaded videos manually
-
-The downloaded files are organized as:
-
-```text
-videos/
-└── Channel Name/
-    ├── 20260825 - Video title [videoid].mp4
-    └── ...
-```
+- yt-dlp's archive prevents duplicates
+- media fragments are retried
+- yt-dlp metadata is stored so the library can display title/channel/date
+- watched state persists locally
+- the browser library works entirely from local files

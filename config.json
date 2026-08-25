@@ -1,6 +1,6 @@
 {
     "download_dir": "videos",
-    "quality": "bestvideo[height<=480][vcodec^=av01]+bestaudio[acodec^=opus]/bestvideo[height<=480][vcodec^=vp9]+bestaudio[acodec^=opus]/bestvideo[height<=480]+bestaudio[acodec^=opus]/best[height<=480]",
+    "quality": "bestvideo[height<=480]+bestaudio/best[height<=480]/best",
     "latest_per_source": 5,
     "sleep_between_sources": 2,
     "retries": 10,

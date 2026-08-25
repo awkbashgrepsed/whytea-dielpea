@@ -38,12 +38,9 @@ def load_config() -> dict:
 
 def load_sources() -> list[str]:
     if not SOURCES_PATH.exists():
-        SOURCES_PATH.write_text(
-            "# Put one YouTube channel URL per line.\n"
-            "# https://www.youtube.com/@Example/videos\n", encoding="utf-8")
+        SOURCES_PATH.write_text("# Put one YouTube channel URL per line.\n# https://www.youtube.com/@Example/videos\n", encoding="utf-8")
         return []
-    return [x.strip() for x in SOURCES_PATH.read_text(encoding="utf-8").splitlines()
-            if x.strip() and not x.strip().startswith("#")]
+    return [x.strip() for x in SOURCES_PATH.read_text(encoding="utf-8").splitlines() if x.strip() and not x.strip().startswith("#")]
 
 def find_ytdlp() -> str:
     exe = shutil.which("yt-dlp")
@@ -53,18 +50,14 @@ def find_ytdlp() -> str:
 def build_command(ytdlp: str, source: str, cfg: dict) -> list[str]:
     download_dir = ROOT / str(cfg["download_dir"]); download_dir.mkdir(parents=True, exist_ok=True)
     output = str(download_dir / "%(uploader)s" / "%(upload_date)s - %(title)s [%(id)s].%(ext)s")
-    cmd = [ytdlp, "--ignore-errors", "--no-abort-on-error",
-           "--retries", str(cfg["retries"]), "--fragment-retries", str(cfg["fragment_retries"]),
-           "--continue", "--no-overwrites", "--download-archive", str(ARCHIVE_PATH),
-           "--format", str(cfg["quality"]), "--merge-output-format", "mp4", "--output", output,
-           "--windows-filenames", "--restrict-filenames", "--write-info-json", "--no-clean-infojson",
+    cmd = [ytdlp, "--ignore-errors", "--no-abort-on-error", "--retries", str(cfg["retries"]),
+           "--fragment-retries", str(cfg["fragment_retries"]), "--continue", "--no-overwrites",
+           "--download-archive", str(ARCHIVE_PATH), "--format", str(cfg["quality"]),
+           "--merge-output-format", "mp4", "--output", output, "--windows-filenames", "--restrict-filenames",
+           "--write-info-json", "--no-clean-infojson", "--write-thumbnail", "--convert-thumbnails", "jpg",
            "--yes-playlist", "--playlist-end", str(cfg["latest_per_source"])]
     browser = str(cfg.get("cookies_from_browser", "")).strip()
     if browser: cmd += ["--cookies-from-browser", browser]
-    # yt-dlp's match-filter parser expects the duration comparison without the
-    # invalid `!duration < 60` expression. Use only a live-stream exclusion here.
-    # Shorts are already limited by the channel /videos listing and can be
-    # filtered further later without breaking normal downloads.
     if cfg.get("no_shorts", True): cmd += ["--match-filter", "!is_live"]
     extra_args = cfg.get("extra_args", [])
     if not isinstance(extra_args, list) or not all(isinstance(x, str) for x in extra_args):

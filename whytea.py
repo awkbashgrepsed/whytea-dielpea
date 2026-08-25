@@ -55,7 +55,7 @@ def build_command(ytdlp: str, source: str, cfg: dict) -> list[str]:
            "--download-archive", str(ARCHIVE_PATH), "--format", str(cfg["quality"]),
            "--merge-output-format", "mp4", "--output", output, "--windows-filenames", "--restrict-filenames",
            "--write-info-json", "--no-clean-infojson", "--write-thumbnail", "--convert-thumbnails", "jpg",
-           "--yes-playlist", "--playlist-end", str(cfg["latest_per_source"])]
+           "--remote-components", "ejs:npm", "--yes-playlist", "--playlist-end", str(cfg["latest_per_source"])]
     browser = str(cfg.get("cookies_from_browser", "")).strip()
     if browser: cmd += ["--cookies-from-browser", browser]
     if cfg.get("no_shorts", True): cmd += ["--match-filter", "!is_live"]

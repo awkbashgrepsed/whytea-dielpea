@@ -13,32 +13,19 @@ ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = ROOT / "config.json"
 SOURCES_PATH = ROOT / "sources.txt"
 ARCHIVE_PATH = ROOT / "archive.txt"
-DEFAULT_CONFIG = {
-    "download_dir": "videos",
-    "quality": "bv*+ba/b",
-    "latest_per_source": 5,
-    "sleep_between_sources": 2,
-    "retries": 10,
-    "fragment_retries": 10,
-    "continue_downloads": True,
-    "no_shorts": True,
-    "cookies_from_browser": "firefox",
-    "extra_args": [],
-}
+
 
 def load_config() -> dict:
     if not CONFIG_PATH.exists():
-        CONFIG_PATH.write_text(json.dumps(DEFAULT_CONFIG, indent=4) + "\n", encoding="utf-8")
-        return DEFAULT_CONFIG.copy()
+        raise SystemExit(f"Missing config.json: {CONFIG_PATH}")
     try:
         data = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
+    except (OSError, json.JSONDecodeError) as exc:
         raise SystemExit(f"Invalid config.json: {exc}")
     if not isinstance(data, dict):
         raise SystemExit("config.json must contain a JSON object")
-    cfg = DEFAULT_CONFIG.copy()
-    cfg.update(data)
-    return cfg
+    return data
+
 
 def load_sources() -> list[str]:
     if not SOURCES_PATH.exists():
@@ -46,11 +33,13 @@ def load_sources() -> list[str]:
         return []
     return [x.strip() for x in SOURCES_PATH.read_text(encoding="utf-8").splitlines() if x.strip() and not x.strip().startswith("#")]
 
+
 def find_ytdlp() -> str:
     exe = shutil.which("yt-dlp")
     if exe:
         return exe
     raise SystemExit("yt-dlp was not found in PATH. Install system yt-dlp and make sure `yt-dlp --version` works.")
+
 
 def build_command(ytdlp: str, source: str, cfg: dict) -> list[str]:
     download_dir = ROOT / str(cfg["download_dir"])
@@ -90,6 +79,7 @@ def build_command(ytdlp: str, source: str, cfg: dict) -> list[str]:
     cmd.append(source)
     return cmd
 
+
 def run_source(ytdlp: str, source: str, cfg: dict) -> int:
     print(f"\n=== {source} ===")
     cmd = build_command(ytdlp, source, cfg)
@@ -99,6 +89,7 @@ def run_source(ytdlp: str, source: str, cfg: dict) -> int:
     except KeyboardInterrupt:
         print("\nStopped by user.")
         return 130
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Download the latest videos from selected YouTube sources.")
@@ -136,6 +127,7 @@ def main() -> int:
             print("\nStopped.")
             break
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

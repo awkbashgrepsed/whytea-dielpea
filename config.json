@@ -1,5 +1,6 @@
 {
     "download_dir": "videos",
+    "quality": "bv*+ba/b",
     "latest_per_source": 5,
     "sleep_between_sources": 2,
     "retries": 10,

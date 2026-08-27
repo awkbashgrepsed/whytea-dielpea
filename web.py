@@ -25,7 +25,7 @@ h1{font-size:24px;margin-bottom:4px}.sub{color:#999;margin-bottom:22px}
 .toolbar{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap}
 button{background:#292929;color:#eee;border:1px solid #444;padding:7px 11px;cursor:pointer;border-radius:3px}
 button:hover{background:#333}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:22px}.card{min-width:0}.card.watched{opacity:.58}
-.thumb{display:block;width:100%;aspect-ratio:16/9;background:#222;object-fit:cover;border-radius:5px}.placeholder{display:flex;align-items:center;justify-content:center;color:#777}
+.thumb-wrap{position:relative;width:100%;aspect-ratio:16/9;background:#222;border-radius:5px;overflow:hidden}.thumb{display:block;width:100%;height:100%;object-fit:cover}.placeholder{display:flex;align-items:center;justify-content:center;color:#777}.duration{position:absolute;right:7px;bottom:7px;background:rgba(0,0,0,.85);color:#fff;font-size:13px;font-weight:600;line-height:1;padding:4px 6px;border-radius:3px;text-shadow:0 1px 1px #000}
 a{color:inherit;text-decoration:none}.title{font-size:16px;font-weight:600;line-height:1.3;margin-top:9px}.channel{color:#aaa;font-size:14px;margin-top:5px}.date{color:#888;font-size:13px;margin-top:4px}.badge{font-size:11px;border:1px solid #555;padding:2px 5px;margin-left:6px;color:#aaa}.empty{color:#999;padding:30px 0}
 .player{max-width:1000px;margin:auto}.player video{width:100%;max-height:75vh;background:#000}.back{display:inline-block;margin-bottom:14px;color:#aaa}.watch-title{font-size:21px;margin:12px 0 5px}.watch-meta{color:#999;margin-bottom:15px}.actions{display:flex;gap:8px;margin-bottom:25px}
 @media(max-width:650px){body{margin-top:18px}.grid{grid-template-columns:1fr}}
@@ -39,6 +39,7 @@ function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function videoUrl(v){return '/video/'+encodeURIComponent(v.path);}
 function thumbUrl(v){return v.thumbnail?'/thumb/'+encodeURIComponent(v.thumbnail):null;}
 function duration(s){if(!s)return '';s=Number(s);if(!Number.isFinite(s))return '';let h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=Math.floor(s%60);return h?`${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`:`${m}:${String(sec).padStart(2,'0')}`;}
+function thumb(v){return `<div class="thumb-wrap">${v.thumbnail?`<img class="thumb" src="${thumbUrl(v)}" loading="lazy" alt="">`:'<div class="thumb placeholder">No thumbnail</div>'}${duration(v.duration)?`<span class="duration">${duration(v.duration)}</span>`:''}</div>`;}
 function home(){history.pushState({},'', '/');render();}
 function openVideo(id){history.pushState({},'', '/watch/'+encodeURIComponent(id));render();}
 function render(){
@@ -48,7 +49,7 @@ function render(){
    return;
  }
  let a=videos.filter(v=>filter==='all'||(filter==='watched'?v.watched:!v.watched));
- app.innerHTML=`<h1>whytea-dielpea</h1><div class="sub">Local YouTube library · ${videos.filter(v=>!v.watched).length} unwatched</div><div class="toolbar"><button onclick="filter='all';render()">All</button><button onclick="filter='unwatched';render()">Unwatched</button><button onclick="filter='watched';render()">Watched</button><button onclick="load()">Refresh</button></div><div class="grid">${a.length?a.map(v=>`<article class="card ${v.watched?'watched':''}"><a href="/watch/${encodeURIComponent(v.id)}" onclick="event.preventDefault();openVideo('${esc(v.id)}')">${v.thumbnail?`<img class="thumb" src="${thumbUrl(v)}" loading="lazy" alt="">`:'<div class="thumb placeholder">No thumbnail</div>'}<div class="title">${esc(v.title)}${v.watched?'<span class="badge">watched</span>':''}</div><div class="channel">${esc(v.channel)}</div><div class="date">${esc(v.upload_date||'Unknown upload date')}</div></a></article>`).join(''):'<div class="empty">No videos here.</div>'}</div>`;
+ app.innerHTML=`<h1>whytea-dielpea</h1><div class="sub">Local YouTube library · ${videos.filter(v=>!v.watched).length} unwatched</div><div class="toolbar"><button onclick="filter='all';render()">All</button><button onclick="filter='unwatched';render()">Unwatched</button><button onclick="filter='watched';render()">Watched</button><button onclick="load()">Refresh</button></div><div class="grid">${a.length?a.map(v=>`<article class="card ${v.watched?'watched':''}"><a href="/watch/${encodeURIComponent(v.id)}" onclick="event.preventDefault();openVideo('${esc(v.id)}')">${thumb(v)}<div class="title">${esc(v.title)}${v.watched?'<span class="badge">watched</span>':''}</div><div class="channel">${esc(v.channel)}</div><div class="date">${esc(v.upload_date||'Unknown upload date')}</div></a></article>`).join(''):'<div class="empty">No videos here.</div>'}</div>`;
 }
 async function load(){let r=await fetch('/api/videos');videos=await r.json();render();}
 async function mark(id,watched){await fetch('/api/watch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,watched})});await load();if(location.pathname.startsWith('/watch/'))render();}

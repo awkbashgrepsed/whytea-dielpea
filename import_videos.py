@@ -7,6 +7,7 @@ import json
 import shutil
 import subprocess
 import sys
+from datetime import date
 from pathlib import Path
 
 VIDEO_EXTENSIONS = {".mp4", ".mkv", ".webm", ".mov", ".avi", ".m4v"}
@@ -90,6 +91,7 @@ def prepare(folder: Path, force: bool) -> int:
     created_thumbnails = 0
     created_info = 0
     failed = 0
+    import_date = date.today().strftime("%Y%m%d")
 
     for video in sorted(videos):
         thumbnail = video.with_suffix(".jpg")
@@ -103,6 +105,7 @@ def prepare(folder: Path, force: bool) -> int:
             info.update({
                 "id": video.stem,
                 "title": info.get("title") or video.stem,
+                "upload_date": import_date,
             })
             info_path.write_text(json.dumps(info, indent=2) + "\n", encoding="utf-8")
             created_info += 1
@@ -111,7 +114,7 @@ def prepare(folder: Path, force: bool) -> int:
             failed += 1
             print(f"Could not create thumbnail: {video}")
         else:
-            print(f"Prepared: {video.name}")
+            print(f"Prepared: {video.name} (date: {import_date})")
 
     print(f"\nDone. Videos: {len(videos)}, thumbnails created: {created_thumbnails}, metadata created: {created_info}, thumbnail failures: {failed}")
     return 1 if failed else 0

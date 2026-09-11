@@ -65,20 +65,10 @@ def build_command(
     cfg: dict,
     source_type: str = "auto",
 ) -> list[str]:
-    """Build a yt-dlp command while keeping every download in its channel folder.
-
-    source_type controls playlist handling:
-      auto     - normal subscription/source behavior (limited by latest_per_source)
-      channel  - download the complete channel
-      playlist - download the complete playlist
-      video    - download exactly one video
-    """
+    """Build a yt-dlp command while keeping every download in its channel folder."""
     download_dir = ROOT / str(cfg["download_dir"])
     download_dir.mkdir(parents=True, exist_ok=True)
 
-    # %(uploader)s is deliberately the first directory component. This means a
-    # one-video download goes into the existing channel folder instead of getting
-    # a folder named after the video or playlist.
     output = str(
         download_dir
         / "%(uploader)s"
@@ -97,10 +87,8 @@ def build_command(
         "--no-overwrites",
         "--download-archive",
         str(ARCHIVE_PATH),
-        "--format",
-        str(cfg["quality"]),
-        "--merge-output-format",
-        "mp4",
+        # No --format here: let yt-dlp use its own current default format
+        # selection, including AV1/VP9/AVC when appropriate.
         "--output",
         output,
         "--windows-filenames",
@@ -114,15 +102,11 @@ def build_command(
         "ejs:npm",
     ]
 
-    # Subscription downloads keep the existing "latest N" behavior. Explicit
-    # channel/playlist downloads intentionally have no playlist-end limit.
     if source_type == "video":
         cmd.append("--no-playlist")
     else:
         cmd.append("--yes-playlist")
-        if source_type in {"auto", "channel"} and source_type != "channel":
-            cmd += ["--playlist-end", str(cfg["latest_per_source"])]
-        elif source_type == "auto":
+        if source_type == "auto":
             cmd += ["--playlist-end", str(cfg["latest_per_source"])]
 
     browser = str(cfg.get("cookies_from_browser", "")).strip()
@@ -140,7 +124,7 @@ def build_command(
 def run_source(ytdlp: str, source: str, cfg: dict, source_type: str = "auto") -> int:
     print(f"\n=== {source} ===")
     cmd = build_command(ytdlp, source, cfg, source_type)
-    print(f"Running yt-dlp with quality: {cfg['quality']}")
+    print("Running yt-dlp with its default format selection")
     try:
         return subprocess.call(cmd)
     except KeyboardInterrupt:
@@ -180,7 +164,6 @@ def main() -> int:
     video = subparsers.add_parser("video", help="download one YouTube video")
     video.add_argument("url", help="YouTube video URL")
 
-    # Keep the old interface working: `python whytea.py` means subscription sync.
     parser.add_argument("--once", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--watch", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--interval", type=int, default=1800, help=argparse.SUPPRESS)
@@ -195,13 +178,12 @@ def main() -> int:
         print(f"yt-dlp: {subprocess.check_output([ytdlp, '--version'], text=True).strip()}")
         print(f"sources: {len(sources)}")
         print(f"archive: {ARCHIVE_PATH}")
-        print(f"quality: {cfg['quality']}")
+        print("quality: yt-dlp default")
         return 0
 
     if args.command in {"channel", "playlist", "video"}:
         return download_explicit(ytdlp, args.url, cfg, args.command)
 
-    # No subcommand means the original subscription downloader.
     sources = load_sources()
     watch = getattr(args, "watch", False)
     interval = getattr(args, "interval", 1800)

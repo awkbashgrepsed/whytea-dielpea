@@ -38,13 +38,79 @@ https://www.youtube.com/@SomeChannel/videos
 https://www.youtube.com/@AnotherChannel/videos
 ```
 
-Then download:
+Then download the latest configured videos:
 
 ```bash
 python whytea.py
 ```
 
 The default is the newest **5 videos per source**. Change `latest_per_source` in `config.json` for more or fewer.
+
+## Download commands
+
+There are now four simple download modes. **Every mode stores videos under the uploader/channel folder**, so a single video does not create a folder named after the video.
+
+### Sync subscribed channels
+
+Uses `sources.txt` and downloads the configured number of newest videos from each source:
+
+```bash
+python whytea.py
+```
+
+The explicit equivalent is:
+
+```bash
+python whytea.py sync
+```
+
+### Download a complete channel
+
+Give it a channel URL. There is no `latest_per_source` limit:
+
+```bash
+python whytea.py channel https://www.youtube.com/@SomeChannel/videos
+```
+
+Files go to:
+
+```text
+videos/SomeChannel/
+```
+
+### Download a complete playlist
+
+Give it a playlist URL:
+
+```bash
+python whytea.py playlist "https://www.youtube.com/playlist?list=PLAYLIST_ID"
+```
+
+Playlist videos are still placed according to their uploader, for example:
+
+```text
+videos/SomeChannel/video.mp4
+```
+
+This also handles playlists containing videos from different channels without creating a playlist-named folder.
+
+### Download one video
+
+Give it a normal YouTube video URL:
+
+```bash
+python whytea.py video "https://www.youtube.com/watch?v=VIDEO_ID"
+```
+
+If that video belongs to `SomeChannel`, it goes directly into:
+
+```text
+videos/SomeChannel/
+```
+
+No `videos/Video Title/` folder is created.
+
+The same `archive.txt`, quality, cookies, retry settings, thumbnails, metadata, and other configuration are used for all four modes.
 
 ## Local Firefox library
 

@@ -87,8 +87,11 @@ def build_command(
         "--no-overwrites",
         "--download-archive",
         str(ARCHIVE_PATH),
-        # No --format here: let yt-dlp use its own current default format
-        # selection, including AV1/VP9/AVC when appropriate.
+        # Prefer AV1 video and do not fall back to AVC/VP9.
+        # The second branch handles AV1 videos that are available as a single
+        # progressive format instead of separate video/audio streams.
+        "--format",
+        "bestvideo[vcodec^=av01]+bestaudio/best[vcodec^=av01]",
         "--output",
         output,
         "--windows-filenames",
@@ -124,7 +127,7 @@ def build_command(
 def run_source(ytdlp: str, source: str, cfg: dict, source_type: str = "auto") -> int:
     print(f"\n=== {source} ===")
     cmd = build_command(ytdlp, source, cfg, source_type)
-    print("Running yt-dlp with its default format selection")
+    print("Running yt-dlp with AV1-only video selection")
     try:
         return subprocess.call(cmd)
     except KeyboardInterrupt:
@@ -178,7 +181,7 @@ def main() -> int:
         print(f"yt-dlp: {subprocess.check_output([ytdlp, '--version'], text=True).strip()}")
         print(f"sources: {len(sources)}")
         print(f"archive: {ARCHIVE_PATH}")
-        print("quality: yt-dlp default")
+        print("video codec: AV1 only")
         return 0
 
     if args.command in {"channel", "playlist", "video"}:

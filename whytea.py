@@ -87,10 +87,13 @@ def build_command(
         "--no-overwrites",
         "--download-archive",
         str(ARCHIVE_PATH),
-        # Prefer AV1 whenever YouTube provides it. If no AV1 format exists,
-        # fall back to yt-dlp's normal best-video + best-audio selection.
+
+        "--extractor-args",
+        "youtube:player_client=web_embedded",
+
         "--format",
-        "bestvideo[vcodec^=av01]+bestaudio/best[vcodec^=av01]/bestvideo+bestaudio/best",
+        "398+bestaudio/398",
+
         "--output",
         output,
         "--windows-filenames",
@@ -103,6 +106,7 @@ def build_command(
         "--remote-components",
         "ejs:npm",
     ]
+
 
     if source_type == "video":
         cmd.append("--no-playlist")
@@ -126,7 +130,7 @@ def build_command(
 def run_source(ytdlp: str, source: str, cfg: dict, source_type: str = "auto") -> int:
     print(f"\n=== {source} ===")
     cmd = build_command(ytdlp, source, cfg, source_type)
-    print("Running yt-dlp: AV1 preferred, normal format fallback enabled")
+    print("Running yt-dlp")
     try:
         return subprocess.call(cmd)
     except KeyboardInterrupt:

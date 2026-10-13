@@ -142,6 +142,26 @@ For downloads requiring your logged-in YouTube session, configure yt-dlp browser
 
 Do not put account cookies into this public repository.
 
+## Proxy
+
+Use a SOCKS5 proxy for downloads. If you pass `--proxy` without an address, it uses `127.0.0.1:10808`:
+
+```bash
+python whytea.py --proxy
+python whytea.py --proxy sync
+python whytea.py video "https://www.youtube.com/watch?v=VIDEO_ID" --proxy
+```
+
+To use a different proxy, provide `HOST:PORT`:
+
+```bash
+python whytea.py --proxy 192.168.1.100:9050
+python whytea.py sync --proxy 192.168.1.100:9050
+python whytea.py video "https://www.youtube.com/watch?v=VIDEO_ID" --proxy 192.168.1.100:9050
+```
+
+A bare `HOST:PORT` is interpreted as a SOCKS5 proxy. You can also pass a complete proxy URL, such as `socks5://192.168.1.100:9050`.
+
 ## Continuous downloading
 
 ```bash

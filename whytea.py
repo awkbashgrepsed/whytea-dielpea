@@ -64,6 +64,7 @@ def build_command(
     source: str,
     cfg: dict,
     source_type: str = "auto",
+    proxy: str | None = None,
 ) -> list[str]:
     """Build a yt-dlp command while keeping every download in its channel folder."""
     download_dir = ROOT / str(cfg["download_dir"])
@@ -108,6 +109,9 @@ def build_command(
     ]
 
 
+    if proxy:
+        cmd += ["--proxy", proxy]
+
     if source_type == "video":
         cmd.append("--no-playlist")
     else:
@@ -127,9 +131,12 @@ def build_command(
     return cmd
 
 
-def run_source(ytdlp: str, source: str, cfg: dict, source_type: str = "auto") -> int:
+def run_source(
+    ytdlp: str, source: str, cfg: dict, source_type: str = "auto",
+    proxy: str | None = None,
+) -> int:
     print(f"\n=== {source} ===")
-    cmd = build_command(ytdlp, source, cfg, source_type)
+    cmd = build_command(ytdlp, source, cfg, source_type, proxy)
     print("Running yt-dlp")
     try:
         return subprocess.call(cmd)
@@ -138,14 +145,17 @@ def run_source(ytdlp: str, source: str, cfg: dict, source_type: str = "auto") ->
         return 130
 
 
-def download_explicit(ytdlp: str, source: str, cfg: dict, source_type: str) -> int:
+def download_explicit(
+    ytdlp: str, source: str, cfg: dict, source_type: str,
+    proxy: str | None = None,
+) -> int:
     if source_type == "channel":
         print("Downloading the full channel into videos/<channel>/")
     elif source_type == "playlist":
         print("Downloading the full playlist into videos/<channel>/")
     else:
         print("Downloading one video into videos/<channel>/")
-    return run_source(ytdlp, source, cfg, source_type)
+    return run_source(ytdlp, source, cfg, source_type, proxy)
 
 
 def main() -> int:
@@ -154,21 +164,37 @@ def main() -> int:
     )
     subparsers = parser.add_subparsers(dest="command")
 
+    def add_proxy_argument(target: argparse.ArgumentParser) -> None:
+        target.add_argument(
+            "--proxy",
+            nargs="?",
+            const="127.0.0.1:10808",
+            default=argparse.SUPPRESS,
+            metavar="[HOST:PORT]",
+            help="use a SOCKS5 proxy (default when omitted: 127.0.0.1:10808)",
+        )
+
+    add_proxy_argument(parser)
+
     sync = subparsers.add_parser(
         "sync",
         help="download the configured subscribed channels (latest_per_source each)",
     )
     sync.add_argument("--watch", action="store_true", help="repeat the subscription sync")
     sync.add_argument("--interval", type=int, default=1800, help="seconds between watch checks")
+    add_proxy_argument(sync)
 
     channel = subparsers.add_parser("channel", help="download a complete YouTube channel")
     channel.add_argument("url", help="YouTube channel URL")
+    add_proxy_argument(channel)
 
     playlist = subparsers.add_parser("playlist", help="download a complete YouTube playlist")
     playlist.add_argument("url", help="YouTube playlist URL")
+    add_proxy_argument(playlist)
 
     video = subparsers.add_parser("video", help="download one YouTube video")
     video.add_argument("url", help="YouTube video URL")
+    add_proxy_argument(video)
 
     parser.add_argument("--once", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--watch", action="store_true", help=argparse.SUPPRESS)
@@ -178,6 +204,20 @@ def main() -> int:
     args = parser.parse_args()
     cfg = load_config()
     ytdlp = find_ytdlp()
+    proxy_arg = getattr(args, "proxy", None)
+    proxy = None
+    if proxy_arg:
+        if "://" in proxy_arg:
+            proxy = proxy_arg
+        else:
+            if proxy_arg.count(":") != 1:
+                raise SystemExit("Invalid --proxy value. Use HOST:PORT, e.g. 192.168.1.100:9050")
+            host, port = proxy_arg.rsplit(":", 1)
+            if not host or not port.isdigit() or not (1 <= int(port) <= 65535):
+                raise SystemExit("Invalid --proxy value. Use HOST:PORT with a port from 1 to 65535")
+            proxy = f"socks5://{host}:{port}"
+        if proxy_arg == "127.0.0.1:10808":
+            proxy = "socks5://127.0.0.1:10808"
 
     if args.check:
         sources = load_sources()
@@ -188,7 +228,7 @@ def main() -> int:
         return 0
 
     if args.command in {"channel", "playlist", "video"}:
-        return download_explicit(ytdlp, args.url, cfg, args.command)
+        return download_explicit(ytdlp, args.url, cfg, args.command, proxy)
 
     sources = load_sources()
     watch = getattr(args, "watch", False)
@@ -204,7 +244,7 @@ def main() -> int:
             f"latest {cfg['latest_per_source']} each"
         )
         for index, source in enumerate(sources, 1):
-            code = run_source(ytdlp, source, cfg, "auto")
+            code = run_source(ytdlp, source, cfg, "auto", proxy)
             if code not in (0, 1):
                 print(f"yt-dlp exited with code {code}; continuing.")
             if index != len(sources):

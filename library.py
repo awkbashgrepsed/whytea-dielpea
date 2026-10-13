@@ -87,6 +87,7 @@ def scan_library() -> list[dict]:
             "channel": uploader,
             "upload_date": upload_date,
             "duration": info.get("duration"),
+            "view_count": info.get("view_count"),
             "path": str(path.relative_to(root)).replace("\\", "/"),
             "watched": bool(state.get(vid, {}).get("watched", False)),
             "watched_at": state.get(vid, {}).get("watched_at"),

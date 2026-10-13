@@ -148,7 +148,6 @@ Use a SOCKS5 proxy for downloads. If you pass `--proxy` without an address, it u
 
 ```bash
 python whytea.py --proxy
-python whytea.py --proxy sync
 python whytea.py video "https://www.youtube.com/watch?v=VIDEO_ID" --proxy
 ```
 

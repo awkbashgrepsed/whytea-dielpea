@@ -2,6 +2,8 @@
 """Serve the whytea-dielpea library to a local web browser."""
 from __future__ import annotations
 
+import json
+
 import mimetypes
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer

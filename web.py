@@ -2,7 +2,6 @@
 """Serve the whytea-dielpea library to a local web browser."""
 from __future__ import annotations
 
-import json
 import mimetypes
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -10,18 +9,7 @@ from urllib.parse import quote, unquote, urlparse
 
 from library import ROOT, load_config, scan_library, set_watched
 
-LOCAL_CONFIG = ROOT / "web.local.json"
-
-def load_host():
-    """Load a machine-local bind address without modifying tracked source."""
-    try:
-        config = json.loads(LOCAL_CONFIG.read_text(encoding="utf-8"))
-        host = config.get("host", "127.0.0.1")
-        return host if isinstance(host, str) and host.strip() else "127.0.0.1"
-    except (OSError, json.JSONDecodeError, AttributeError):
-        return "127.0.0.1"
-
-HOST = load_host()
+HOST = "0.0.0.0"
 PORT = 8765
 
 HTML = r'''<!doctype html>

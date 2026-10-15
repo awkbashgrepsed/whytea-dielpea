@@ -6,11 +6,23 @@ import json
 import mimetypes
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from urllib.parse import quote, unquote, urlparse
 
 from library import ROOT, load_config, scan_library, set_watched
 
-HOST = "127.0.0.1"
+LOCAL_CONFIG = ROOT / "web.local.json"
+
+def load_host():
+    """Load a machine-local bind address without modifying tracked source."""
+    try:
+        config = json.loads(LOCAL_CONFIG.read_text(encoding="utf-8"))
+        host = config.get("host", "127.0.0.1")
+        return host if isinstance(host, str) and host.strip() else "127.0.0.1"
+    except (OSError, json.JSONDecodeError, AttributeError):
+        return "127.0.0.1"
+
+HOST = load_host()
 PORT = 8765
 
 HTML = r'''<!doctype html>

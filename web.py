@@ -6,7 +6,6 @@ import json
 import mimetypes
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from pathlib import Path
 from urllib.parse import quote, unquote, urlparse
 
 from library import ROOT, load_config, scan_library, set_watched

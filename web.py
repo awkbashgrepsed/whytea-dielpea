@@ -34,7 +34,7 @@ a{color:inherit;text-decoration:none}.title{font-size:16px;font-weight:600;line-
 <body>
 <div id="app"></div>
 <script>
-let videos=[],filter='all',sortBy='downloaded-desc';
+let videos=[],filter='all',sortBy='downloaded-desc',searchQuery='';
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function videoUrl(v){return '/video/'+encodeURIComponent(v.path);}
 function thumbUrl(v){return v.thumbnail?'/thumb/'+encodeURIComponent(v.thumbnail):null;}
@@ -45,11 +45,17 @@ function home(){history.pushState({},'', '/');render();}
 function openVideo(id){history.pushState({},'', '/watch/'+encodeURIComponent(id));render();}
 function render(){
  const app=document.getElementById('app'); const path=location.pathname;
+ const searchHadFocus=document.activeElement?.id==='search';
+ const searchCursor=searchHadFocus?document.activeElement.selectionStart:null;
  if(path.startsWith('/watch/')){let id=decodeURIComponent(path.slice(7)),v=videos.find(x=>x.id===id);if(!v){app.innerHTML='<div class="empty">Video not found.</div>';return;}
    app.innerHTML=`<div class="player"><a class="back" href="/" onclick="event.preventDefault();home()">← Back to library</a><video id="player" controls autoplay preload="metadata" src="${videoUrl(v)}" onended="mark('${esc(v.id)}',true)"></video><div class="watch-title">${esc(v.title)}</div><div class="watch-meta">${esc(v.channel)} · ${esc(views(v.view_count))}${views(v.view_count)?' · ':''}${esc(v.upload_date||'Unknown upload date')}${duration(v.duration)?' · '+duration(v.duration):''}</div><div class="actions"><button onclick="mark('${esc(v.id)}',${!v.watched})">${v.watched?'Mark unwatched':'Mark watched'}</button></div></div>`;
    return;
  }
- let a=videos.filter(v=>filter==='all'||(filter==='watched'?v.watched:!v.watched));
+ const query=searchQuery.trim().toLocaleLowerCase();
+ let a=videos.filter(v=>
+  (filter==='all'||(filter==='watched'?v.watched:!v.watched)) &&
+  (!query||[v.title,v.channel,v.path].some(value=>String(value||'').toLocaleLowerCase().includes(query)))
+ );
  const sorters={
   'downloaded-desc':(x,y)=>(y.downloaded_at||0)-(x.downloaded_at||0),
   'downloaded-asc':(x,y)=>(x.downloaded_at||0)-(y.downloaded_at||0),
@@ -59,7 +65,8 @@ function render(){
   'title-desc':(x,y)=>(y.title||'').localeCompare(x.title||'',undefined,{sensitivity:'base'})
  };
  a.sort(sorters[sortBy]||sorters['downloaded-desc']);
- app.innerHTML=`<h1>whytea-dielpea</h1><div class="sub">Local YouTube library · ${videos.filter(v=>!v.watched).length} unwatched</div><div class="toolbar"><button onclick="filter='all';render()">All</button><button onclick="filter='unwatched';render()">Unwatched</button><button onclick="filter='watched';render()">Watched</button><label for="sort" style="align-self:center;color:#aaa">Sort by</label><select id="sort" onchange="sortBy=this.value;render()" style="background:#292929;color:#eee;border:1px solid #444;padding:7px 9px;border-radius:3px"><option value="downloaded-desc" ${sortBy==='downloaded-desc'?'selected':''}>Recently downloaded</option><option value="downloaded-asc" ${sortBy==='downloaded-asc'?'selected':''}>Oldest downloaded</option><option value="upload-desc" ${sortBy==='upload-desc'?'selected':''}>Recently uploaded</option><option value="upload-asc" ${sortBy==='upload-asc'?'selected':''}>Oldest uploaded</option><option value="title-asc" ${sortBy==='title-asc'?'selected':''}>Title (A–Z)</option><option value="title-desc" ${sortBy==='title-desc'?'selected':''}>Title (Z–A)</option></select><button onclick="load()">Refresh</button></div><div class="grid">${a.length?a.map(v=>`<article class="card ${v.watched?'watched':''}"><a href="/watch/${encodeURIComponent(v.id)}" onclick="event.preventDefault();openVideo('${esc(v.id)}')">${thumb(v)}<div class="title">${esc(v.title)}${v.watched?'<span class="badge">watched</span>':''}</div><div class="channel">${esc(v.channel)}</div><div class="date">${esc(views(v.view_count))}${views(v.view_count)?' · ':''}${esc(v.upload_date||'Unknown upload date')}</div></a></article>`).join(''):'<div class="empty">No videos here.</div>'}</div>`;
+ app.innerHTML=`<h1>whytea-dielpea</h1><div class="sub">Local YouTube library · ${videos.filter(v=>!v.watched).length} unwatched</div><div class="toolbar"><input id="search" type="search" placeholder="Search videos or channels…" aria-label="Search videos or channels" value="${esc(searchQuery)}" oninput="searchQuery=this.value;render()" style="flex:1;min-width:220px;max-width:420px;background:#202020;color:#eee;border:1px solid #444;padding:7px 10px;border-radius:3px"><button onclick="filter='all';render()">All</button><button onclick="filter='unwatched';render()">Unwatched</button><button onclick="filter='watched';render()">Watched</button><label for="sort" style="align-self:center;color:#aaa">Sort by</label><select id="sort" onchange="sortBy=this.value;render()" style="background:#292929;color:#eee;border:1px solid #444;padding:7px 9px;border-radius:3px"><option value="downloaded-desc" ${sortBy==='downloaded-desc'?'selected':''}>Recently downloaded</option><option value="downloaded-asc" ${sortBy==='downloaded-asc'?'selected':''}>Oldest downloaded</option><option value="upload-desc" ${sortBy==='upload-desc'?'selected':''}>Recently uploaded</option><option value="upload-asc" ${sortBy==='upload-asc'?'selected':''}>Oldest uploaded</option><option value="title-asc" ${sortBy==='title-asc'?'selected':''}>Title (A–Z)</option><option value="title-desc" ${sortBy==='title-desc'?'selected':''}>Title (Z–A)</option></select><button onclick="load()">Refresh</button></div><div class="grid">${a.length?a.map(v=>`<article class="card ${v.watched?'watched':''}"><a href="/watch/${encodeURIComponent(v.id)}" onclick="event.preventDefault();openVideo('${esc(v.id)}')">${thumb(v)}<div class="title">${esc(v.title)}${v.watched?'<span class="badge">watched</span>':''}</div><div class="channel">${esc(v.channel)}</div><div class="date">${esc(views(v.view_count))}${views(v.view_count)?' · ':''}${esc(v.upload_date||'Unknown upload date')}</div></a></article>`).join(''):'<div class="empty">No matching videos.</div>'}</div>`;
+ if(searchHadFocus){const search=document.getElementById('search');if(search){search.focus();if(searchCursor!==null)search.setSelectionRange(searchCursor,searchCursor);}}
 }
 async function load(){let r=await fetch('/api/videos');videos=await r.json();render();}
 async function mark(id,watched){await fetch('/api/watch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,watched})});await load();if(location.pathname.startsWith('/watch/'))render();}

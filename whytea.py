@@ -94,7 +94,7 @@ def build_command(
         "youtube:player_client=web_embedded",
 
         "--format",
-        format_override or "bv[height<=480]+ba/b[height<=480]/b",
+        format_override or "398+bestaudio/398",
 
         "--output",
         output,

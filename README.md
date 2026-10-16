@@ -110,7 +110,40 @@ videos/SomeChannel/
 
 No `videos/Video Title/` folder is created.
 
-The same `archive.txt`, quality, cookies, retry settings, thumbnails, metadata, and other configuration are used for all four modes.
+The same `archive.txt`, quality, cookies, retry settings, thumbnails, metadata, and other configuration are used for all four download modes.
+
+### List available formats
+
+If yt-dlp reports `Requested format is not available`, list what YouTube actually offers for that video. This does not download the video:
+
+```bash
+python whytea.py formats "https://www.youtube.com/watch?v=VIDEO_ID"
+```
+
+You can also use the video command:
+
+```bash
+python whytea.py video "https://www.youtube.com/watch?v=VIDEO_ID" --list-formats
+```
+
+The output includes format IDs, resolutions, codecs, and file sizes where yt-dlp can determine them.
+
+### Force a format
+
+Use `-f` or `--format` to override whytea's automatic selector with a format ID or any yt-dlp format expression:
+
+```bash
+python whytea.py video "https://www.youtube.com/watch?v=VIDEO_ID" -f 18
+python whytea.py video "https://www.youtube.com/watch?v=VIDEO_ID" --format "bv*[height<=360]+ba/b[height<=360]/b"
+```
+
+The same option works with `channel`, `playlist`, and `sync`. For example:
+
+```bash
+python whytea.py sync --format "bv*[height<=480]+ba/b[height<=480]/b"
+```
+
+Without `-f/--format`, whytea prefers video up to 480p plus the best audio, then a combined format up to 480p, and finally yt-dlp's best available format. This avoids hard-coding format ID `398`, which is not available for every video.
 
 ## Local Firefox library
 

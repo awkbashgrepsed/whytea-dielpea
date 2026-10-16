@@ -143,7 +143,7 @@ The same option works with `channel`, `playlist`, and `sync`. For example:
 python whytea.py sync --format "bv[height<=480]+ba/b[height<=480]/b"
 ```
 
-Without `-f/--format`, whytea prefers video up to 480p plus the best audio, then a combined format up to 480p, and finally yt-dlp's best available format. This avoids hard-coding format ID `398`, which is not available for every video.
+Without `-f/--format`, whytea keeps its original default selector `398+bestaudio/398`. If that selector is unavailable for a particular video, list the available formats and choose an override with `-f/--format`.
 
 ## Local Firefox library
 

@@ -132,6 +132,37 @@ def build_command(
     return cmd
 
 
+def confirm_format_override(format_override: str | None) -> tuple[str | None, bool]:
+    """Warn when a bare numeric format ID may download video without audio."""
+    if not format_override or not format_override.isdecimal():
+        return format_override, False
+
+    format_id = format_override
+    audio_selector = f"{format_id}+bestaudio/{format_id}"
+    print(
+        f"\nWarning: -f {format_id} selects only format {format_id}. "
+        "If it is video-only, the download will have no audio."
+    )
+    print("  1) Continue with this format only (video may be silent)")
+    print(f"  2) Add best audio, using: {audio_selector}")
+    print("  3) Cancel")
+    while True:
+        try:
+            choice = input("Choose 1, 2, or 3 [default: 3]: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\nCancelled.")
+            return None, True
+
+        if choice in {"", "3"}:
+            print("Cancelled.")
+            return None, True
+        if choice == "1":
+            return format_id, False
+        if choice == "2":
+            return audio_selector, False
+        print("Please enter 1, 2, or 3.")
+
+
 def run_source(
     ytdlp: str, source: str, cfg: dict, source_type: str = "auto",
     proxy: str | None = None,
@@ -252,6 +283,9 @@ def main() -> int:
         return 0
 
     format_override = getattr(args, "format_override", None)
+    format_override, format_cancelled = confirm_format_override(format_override)
+    if format_cancelled:
+        return 130
 
     if args.command == "formats" or (args.command == "video" and args.list_formats):
         cmd = [

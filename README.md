@@ -143,6 +143,8 @@ The same option works with `channel`, `playlist`, and `sync`. For example:
 python whytea.py sync --format "bv[height<=480]+ba/b[height<=480]/b"
 ```
 
+**Safety prompt for numeric format IDs:** if you pass a bare ID such as `-f 247`, whytea pauses because that format may contain video only. Choose to continue with that ID, add best audio using `247+bestaudio/247`, or cancel. You can still enter a complete format expression yourself to skip this prompt.
+
 Without `-f/--format`, whytea keeps its original default selector `398+bestaudio/398`. If that selector is unavailable for a particular video, list the available formats and choose an override with `-f/--format`.
 
 ## Local Firefox library

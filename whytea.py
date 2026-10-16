@@ -65,6 +65,7 @@ def build_command(
     cfg: dict,
     source_type: str = "auto",
     proxy: str | None = None,
+    format_override: str | None = None,
 ) -> list[str]:
     """Build a yt-dlp command while keeping every download in its channel folder."""
     download_dir = ROOT / str(cfg["download_dir"])
@@ -93,7 +94,7 @@ def build_command(
         "youtube:player_client=web_embedded",
 
         "--format",
-        "398+bestaudio/398",
+        format_override or "bv*[height<=480]+ba/b[height<=480]/b",
 
         "--output",
         output,
@@ -134,9 +135,10 @@ def build_command(
 def run_source(
     ytdlp: str, source: str, cfg: dict, source_type: str = "auto",
     proxy: str | None = None,
+    format_override: str | None = None,
 ) -> int:
     print(f"\n=== {source} ===")
-    cmd = build_command(ytdlp, source, cfg, source_type, proxy)
+    cmd = build_command(ytdlp, source, cfg, source_type, proxy, format_override)
     print("Running yt-dlp")
     try:
         return subprocess.call(cmd)
@@ -147,7 +149,7 @@ def run_source(
 
 def download_explicit(
     ytdlp: str, source: str, cfg: dict, source_type: str,
-    proxy: str | None = None,
+    proxy: str | None = None, format_override: str | None = None,
 ) -> int:
     if source_type == "channel":
         print("Downloading the full channel into videos/<channel>/")
@@ -155,7 +157,7 @@ def download_explicit(
         print("Downloading the full playlist into videos/<channel>/")
     else:
         print("Downloading one video into videos/<channel>/")
-    return run_source(ytdlp, source, cfg, source_type, proxy)
+    return run_source(ytdlp, source, cfg, source_type, proxy, format_override)
 
 
 def main() -> int:
@@ -174,7 +176,15 @@ def main() -> int:
             help="use a SOCKS5 proxy (default when omitted: 127.0.0.1:10808)",
         )
 
+    def add_format_argument(target: argparse.ArgumentParser) -> None:
+        target.add_argument(
+            "-f", "--format", dest="format_override", default=argparse.SUPPRESS,
+            metavar="FORMAT",
+            help="force a yt-dlp format selector or format ID (overrides the default)",
+        )
+
     add_proxy_argument(parser)
+    add_format_argument(parser)
 
     sync = subparsers.add_parser(
         "sync",
@@ -183,18 +193,32 @@ def main() -> int:
     sync.add_argument("--watch", action="store_true", help="repeat the subscription sync")
     sync.add_argument("--interval", type=int, default=1800, help="seconds between watch checks")
     add_proxy_argument(sync)
+    add_format_argument(sync)
 
     channel = subparsers.add_parser("channel", help="download a complete YouTube channel")
     channel.add_argument("url", help="YouTube channel URL")
     add_proxy_argument(channel)
+    add_format_argument(channel)
 
     playlist = subparsers.add_parser("playlist", help="download a complete YouTube playlist")
     playlist.add_argument("url", help="YouTube playlist URL")
     add_proxy_argument(playlist)
+    add_format_argument(playlist)
 
     video = subparsers.add_parser("video", help="download one YouTube video")
     video.add_argument("url", help="YouTube video URL")
+    video.add_argument(
+        "--list-formats", action="store_true",
+        help="list available formats for this video without downloading it",
+    )
     add_proxy_argument(video)
+    add_format_argument(video)
+
+    formats = subparsers.add_parser(
+        "formats", help="list available formats for a video without downloading it"
+    )
+    formats.add_argument("url", help="YouTube video URL")
+    add_proxy_argument(formats)
 
     parser.add_argument("--once", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--watch", action="store_true", help=argparse.SUPPRESS)
@@ -227,8 +251,25 @@ def main() -> int:
         print("video codec: AV1 preferred, normal format fallback")
         return 0
 
+    format_override = getattr(args, "format_override", None)
+
+    if args.command == "formats" or (args.command == "video" and args.list_formats):
+        cmd = [
+            ytdlp, "--list-formats",
+            "--extractor-args", "youtube:player_client=web_embedded",
+            "--remote-components", "ejs:npm",
+        ]
+        if proxy:
+            cmd += ["--proxy", proxy]
+        browser = str(cfg.get("cookies_from_browser", "")).strip()
+        if browser:
+            cmd += ["--cookies-from-browser", browser]
+        cmd.append(args.url)
+        print(f"Listing formats for: {args.url}")
+        return subprocess.call(cmd)
+
     if args.command in {"channel", "playlist", "video"}:
-        return download_explicit(ytdlp, args.url, cfg, args.command, proxy)
+        return download_explicit(ytdlp, args.url, cfg, args.command, proxy, format_override)
 
     sources = load_sources()
     watch = getattr(args, "watch", False)
@@ -244,7 +285,7 @@ def main() -> int:
             f"latest {cfg['latest_per_source']} each"
         )
         for index, source in enumerate(sources, 1):
-            code = run_source(ytdlp, source, cfg, "auto", proxy)
+            code = run_source(ytdlp, source, cfg, "auto", proxy, format_override)
             if code not in (0, 1):
                 print(f"yt-dlp exited with code {code}; continuing.")
             if index != len(sources):

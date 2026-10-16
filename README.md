@@ -134,13 +134,13 @@ Use `-f` or `--format` to override whytea's automatic selector with a format ID 
 
 ```bash
 python whytea.py video "https://www.youtube.com/watch?v=VIDEO_ID" -f 18
-python whytea.py video "https://www.youtube.com/watch?v=VIDEO_ID" --format "bv*[height<=360]+ba/b[height<=360]/b"
+python whytea.py video "https://www.youtube.com/watch?v=VIDEO_ID" --format "bv[height<=360]+ba/b[height<=360]/b"
 ```
 
 The same option works with `channel`, `playlist`, and `sync`. For example:
 
 ```bash
-python whytea.py sync --format "bv*[height<=480]+ba/b[height<=480]/b"
+python whytea.py sync --format "bv[height<=480]+ba/b[height<=480]/b"
 ```
 
 Without `-f/--format`, whytea prefers video up to 480p plus the best audio, then a combined format up to 480p, and finally yt-dlp's best available format. This avoids hard-coding format ID `398`, which is not available for every video.
